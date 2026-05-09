@@ -1,0 +1,127 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum GameState {
+  WAITING
+  PLAYING
+  FINISHED
+}
+
+enum RoundEndReason {
+  KENO_WIN
+  NO_WINNER
+}
+
+enum WinnerType {
+  QUADRA
+  QUINA
+  KENO
+}
+
+enum LedgerType {
+  DEPOSIT_FAKE
+  WITHDRAW_REQUEST_FAKE
+  BUY_CARTELAS
+  PAYOUT
+  ADJUST
+}
+
+model User {
+  id           String        @id @default(cuid())
+  name         String
+  login        String        @unique
+  passwordHash String
+  narrationEnabled Boolean   @default(true)
+  createdAt    DateTime      @default(now())
+
+  wallet       Wallet?
+  ledger       LedgerEntry[]
+  cartelas     Cartela[]
+  winners      Winner[]
+}
+
+model Wallet {
+  userId            String   @id
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  balanceTotal      Decimal  @default(0.0)
+  balanceBonusKeno  Decimal  @default(0.0)
+  balanceWithdrawable Decimal @default(0.0)
+  updatedAt         DateTime @updatedAt
+}
+
+model LedgerEntry {
+  id          String     @id @default(cuid())
+  userId      String
+  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type        LedgerType
+  amount      Decimal
+  balanceAfter Decimal
+  createdAt   DateTime   @default(now())
+  metadata    Json?
+}
+
+model Round {
+  id            String        @id @default(cuid())
+  roundNumber   Int           @unique
+  status        GameState
+  startedAt     DateTime?
+  endedAt       DateTime?
+  reason        RoundEndReason?
+  rulesSnapshot Json
+
+  balls         DrawnBall[]
+  cartelas      Cartela[]
+  winners       Winner[]
+}
+
+model DrawnBall {
+  id        String   @id @default(cuid())
+  roundId   String
+  round     Round    @relation(fields: [roundId], references: [id], onDelete: Cascade)
+  order     Int
+  number    Int
+  drawnAt   DateTime @default(now())
+
+  @@unique([roundId, order])
+  @@unique([roundId, number])
+  @@index([roundId])
+}
+
+model Cartela {
+  id        String   @id @default(cuid())
+  serial    Int      @unique @default(autoincrement())
+  roundId   String
+  round     Round    @relation(fields: [roundId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  numbers   Int[]
+  createdAt DateTime @default(now())
+
+  winners   Winner[]
+
+  @@index([roundId])
+  @@index([userId])
+}
+
+model Winner {
+  id        String     @id @default(cuid())
+  roundId   String
+  round     Round      @relation(fields: [roundId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  cartelaId String
+  cartela   Cartela    @relation(fields: [cartelaId], references: [id], onDelete: Cascade)
+  cartelaSerial Int
+  type      WinnerType
+  createdAt DateTime   @default(now())
+
+  @@index([roundId])
+  @@index([userId])
+}
+

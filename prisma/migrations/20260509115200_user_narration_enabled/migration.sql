@@ -1,0 +1,2 @@
+ALTER TABLE "User" ADD COLUMN "narrationEnabled" BOOLEAN NOT NULL DEFAULT true;
+
