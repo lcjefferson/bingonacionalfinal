@@ -15,9 +15,23 @@ const EnvSchema = z.object({
     .string()
     .optional()
     .transform((v) => v === '1' || v === 'true' || v === 'yes'),
+  /**
+   * Plain HTTP (ex.: http://IP:porta) em produção: cookies de sessão/CSRF precisam de `Secure: false`
+   * ou o navegador ignora-os. Use `1` só em demo; com HTTPS + Nginx, deixe desligado.
+   */
+  ALLOW_HTTP_COOKIES: z
+    .string()
+    .optional()
+    .transform((v) => v === '1' || v === 'true' || v === 'yes'),
 })
 
 export type Env = z.infer<typeof EnvSchema>
+
+/** `Secure` no cookie só quando production e não está em modo HTTP explícito. */
+export function browserCookieSecure(env: Env): boolean {
+  if (env.ALLOW_HTTP_COOKIES) return false
+  return env.NODE_ENV === 'production'
+}
 
 export function getEnv(): Env {
   const parsed = EnvSchema.safeParse(process.env)

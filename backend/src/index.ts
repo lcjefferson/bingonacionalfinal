@@ -9,7 +9,7 @@ import http from 'http'
 import path from 'path'
 import { Server } from 'socket.io'
 
-import { getEnv } from './env'
+import { browserCookieSecure, getEnv } from './env'
 import { authRouter } from './auth/routes'
 import { walletRouter } from './wallet/routes'
 import { GameEngine } from './game/engine'
@@ -49,7 +49,7 @@ const sessionMiddleware = session({
   cookie: {
     httpOnly: true,
     sameSite: 'lax',
-    secure: env.NODE_ENV === 'production',
+    secure: browserCookieSecure(env),
     maxAge: 1000 * 60 * 60 * 24 * 14,
   },
   store: new PgSession({

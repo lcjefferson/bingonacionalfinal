@@ -1,13 +1,16 @@
 import crypto from 'crypto'
 
+import { browserCookieSecure, getEnv } from '../env'
+
 const CSRF_COOKIE = 'bn.csrf'
 
 export function issueCsrfToken(res: any) {
+  const env = getEnv()
   const token = crypto.randomBytes(24).toString('hex')
   res.cookie(CSRF_COOKIE, token, {
     httpOnly: false,
     sameSite: 'lax',
-    secure: process.env.NODE_ENV === 'production',
+    secure: browserCookieSecure(env),
     path: '/',
   })
   return token
